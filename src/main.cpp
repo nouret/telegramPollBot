@@ -55,13 +55,13 @@ int parseMessages(const char* data, chechResult* res, int64_t chatId) {
 		return 0;
 	}
 	for (const auto& upd: document["result"].GetArray()) {
-		if (!upd.HasMember("message") || !upd["message"].IsObject())
-			continue;
 		if (!upd.HasMember("update_id") || !upd["update_id"].IsNumber() || !upd["update_id"].IsInt64())
 			continue;
 		int64_t uid = upd["update_id"].GetInt64();
 		if (uid > res->offset)
 			res->offset = uid;
+		if (!upd.HasMember("message") || !upd["message"].IsObject())
+			continue;
 		auto msg = upd["message"].GetObject();
 		if (!msg.HasMember("chat") || !msg["chat"].IsObject())
 			continue;
@@ -101,7 +101,7 @@ chechResult checkMessages(std::string token, std::string chatId, int64_t offset 
 			int64_t chatIdL = std::stol(chatId);
 			parseMessages(writerData.c_str(), &res, chatIdL);
 			if (res.offset < offset) {
-				return chechResult{false, 0L};
+				return chechResult{false, res.offset};
 			}
 			curl_easy_cleanup(curl);
 			return res;
@@ -121,8 +121,11 @@ int main(int argc, char *argv[]) {
 	int64_t offset = 0;
 	auto res = checkMessages(iToken, chatId);
 	while (true) {
-		if (res.res) {
+		printf("current offset = %ld\n", offset);
+		if (res.offset + 1 > offset) {
 			offset = res.offset + 1;
+		}
+		if (res.res) {
 			postPoll(iToken, chatId);
 		}
 		std::this_thread::sleep_for(std::chrono::seconds(5));
