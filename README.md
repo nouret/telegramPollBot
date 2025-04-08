@@ -24,5 +24,5 @@ Then, to build the program, run this in the source directory:
 
 ```bash
 meson build
-ninja -C buil
+ninja -C build
 ```
